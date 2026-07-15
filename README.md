@@ -49,6 +49,21 @@ Docker Compose（medicalcare 側）では build context を次のように参照
 context: ../MedicalImageRecognition/ai-imaging-service
 ```
 
+## Railway デプロイ
+
+ルートに `Dockerfile` と `railway.json` があります。
+
+```text
+MedicalImageRecognition/
+  Dockerfile          ← Railway が参照
+  railway.json
+  ai-imaging-service/
+    app/
+    requirements.txt
+```
+
+再デプロイは git push 後に自動、または Railway ダッシュボードから Redeploy。
+
 ## 単体 Docker 起動
 
 ```powershell

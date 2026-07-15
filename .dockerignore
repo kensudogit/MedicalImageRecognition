@@ -1,0 +1,12 @@
+.ai-imaging-service/.venv
+**/.venv
+**/__pycache__
+**/*.pyc
+.git
+.gitignore
+.env
+**/.env
+uploads
+**/uploads
+*.md
+.DS_Store
