@@ -58,7 +58,7 @@ def landing_page_html() -> str:
 
     <a class="primary" href="/service">
       サービス画面を開く
-      <small>画像アップロード・病変候補検出・所見表示</small>
+      <small>画像アップロード・病変候補検出・所見表示 · 利用手順パレット付き</small>
     </a>
 
     <h2>開発・管理</h2>
@@ -160,6 +160,106 @@ def service_page_html() -> str:
       white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
     }}
     .selected-file {{ font-size: .8rem; color: #0f766e; margin-top: .4rem; min-height: 1.2em; }}
+    .hdr-actions {{ display: flex; align-items: center; gap: .75rem; flex-wrap: wrap; }}
+    .btn-guide {{
+      border: 1px solid #5eead4; background: rgba(255,255,255,.12); color: #fff;
+      border-radius: 8px; padding: .45rem .85rem; font: inherit; font-size: .85rem;
+      font-weight: 600; cursor: pointer;
+    }}
+    .btn-guide:hover {{ background: rgba(255,255,255,.22); }}
+
+    /* 利用手順モーダル（参照パレットと同系デザイン） */
+    .guide-backdrop {{
+      position: fixed; inset: 0; z-index: 40; pointer-events: none;
+    }}
+    .guide-modal {{
+      --g-teal: #0f766e;
+      --g-teal-mid: #5ba8a0;
+      --g-teal-border: #9fd4ce;
+      --g-card-bg: #f3faf9;
+      --g-ink: #1a2332;
+      --g-muted: #6b7c8a;
+      position: fixed; z-index: 50; top: 72px; right: 24px; width: min(420px, calc(100vw - 24px));
+      max-height: min(78vh, 720px); display: flex; flex-direction: column;
+      background: #fff; border: 1px solid var(--g-teal-border); border-radius: 14px;
+      box-shadow: 0 18px 48px rgba(15, 118, 110, .18), 0 2px 8px rgba(15, 23, 42, .08);
+      overflow: hidden; pointer-events: auto;
+      font-family: "Segoe UI", "Hiragino Sans", "Noto Sans JP", Meiryo, sans-serif;
+    }}
+    .guide-modal.collapsed .guide-body {{ display: none; }}
+    .guide-modal.hidden {{ display: none; }}
+    .guide-head {{
+      display: grid; grid-template-columns: 1fr auto 1fr; align-items: center;
+      gap: .5rem; padding: .85rem 1rem .75rem; border-bottom: 2px solid var(--g-teal-mid);
+      background: #fff; cursor: grab; user-select: none; touch-action: none;
+    }}
+    .guide-head:active {{ cursor: grabbing; }}
+    .guide-head-left {{ display: flex; align-items: flex-start; gap: .55rem; min-width: 0; }}
+    .guide-burger {{
+      width: 18px; height: 14px; margin-top: .35rem; flex-shrink: 0;
+      background:
+        linear-gradient(var(--g-ink), var(--g-ink)) 0 0 / 100% 2px no-repeat,
+        linear-gradient(var(--g-ink), var(--g-ink)) 0 6px / 100% 2px no-repeat,
+        linear-gradient(var(--g-ink), var(--g-ink)) 0 12px / 100% 2px no-repeat;
+    }}
+    .guide-title {{ margin: 0; font-size: 1.15rem; font-weight: 700; color: var(--g-ink); line-height: 1.2; }}
+    .guide-sub {{ margin: .15rem 0 0; font-size: .65rem; letter-spacing: .06em; color: var(--g-muted); font-weight: 600; }}
+    .guide-drag-hint {{
+      justify-self: center; font-size: .72rem; color: var(--g-teal); font-weight: 600; white-space: nowrap;
+    }}
+    .guide-head-right {{ justify-self: end; display: flex; gap: .35rem; }}
+    .guide-icon-btn {{
+      width: 28px; height: 28px; border-radius: 999px; border: 1px solid #d8e8e6;
+      background: #f4fafa; color: #64748b; cursor: pointer; display: grid; place-items: center;
+      font-size: .7rem; line-height: 1; padding: 0;
+    }}
+    .guide-icon-btn:hover {{ background: #e6f5f3; color: var(--g-teal); }}
+    .guide-body {{
+      overflow: auto; padding: .9rem 1rem 1.1rem; display: grid; gap: .85rem;
+      background: linear-gradient(180deg, #fbfdfe 0%, #f7fbfb 100%);
+    }}
+    .guide-card {{
+      background: var(--g-card-bg); border: 1px solid var(--g-teal-border);
+      border-radius: 12px; padding: 1rem 1.05rem;
+    }}
+    .guide-kicker {{
+      margin: 0 0 .35rem; font-size: .68rem; font-weight: 700; letter-spacing: .08em;
+      color: var(--g-teal); text-transform: uppercase;
+    }}
+    .guide-card h3 {{
+      margin: 0 0 .55rem; font-size: 1.05rem; font-weight: 700; color: var(--g-ink); line-height: 1.35;
+    }}
+    .guide-card p {{ margin: 0; font-size: .84rem; line-height: 1.65; color: #334155; }}
+    .guide-pills {{ display: flex; flex-wrap: wrap; gap: .4rem; margin-top: .75rem; }}
+    .guide-pill {{
+      display: inline-block; background: #fff; border: 1px solid var(--g-teal-border);
+      color: #0f4c48; border-radius: 999px; padding: .22rem .65rem; font-size: .72rem; font-weight: 600;
+    }}
+    .guide-row {{ display: flex; align-items: center; gap: .55rem; flex-wrap: wrap; margin-bottom: .55rem; }}
+    .guide-badge {{
+      display: inline-block; background: var(--g-teal); color: #fff; font-size: .65rem;
+      font-weight: 700; letter-spacing: .04em; padding: .28rem .55rem; border-radius: 6px;
+    }}
+    .guide-row-title {{ font-size: .95rem; font-weight: 700; color: var(--g-ink); }}
+    .guide-card ul {{
+      margin: .65rem 0 0; padding: 0 0 0 1.1rem; color: #334155; font-size: .84rem; line-height: 1.7;
+    }}
+    .guide-card li {{ margin: .2rem 0; }}
+    .guide-card li::marker {{ color: var(--g-teal-mid); }}
+    .guide-card code {{
+      font-family: ui-monospace, "Cascadia Code", Consolas, monospace;
+      font-size: .8em; background: #fff; border: 1px solid #d5e8e5; border-radius: 4px;
+      padding: .05rem .3rem; color: #0f4c48;
+    }}
+    .guide-warn-inline {{
+      margin-top: .7rem; padding: .55rem .7rem; border-radius: 8px;
+      background: #fffbeb; border: 1px solid #fcd34d; color: #78350f; font-size: .8rem; line-height: 1.5;
+    }}
+    @media (max-width: 640px) {{
+      .guide-modal {{ top: auto; bottom: 12px; right: 12px; left: 12px; width: auto; max-height: 70vh; }}
+      .guide-drag-hint {{ display: none; }}
+      .guide-head {{ grid-template-columns: 1fr auto; }}
+    }}
   </style>
 </head>
 <body>
@@ -168,8 +268,89 @@ def service_page_html() -> str:
       <h1>医療画像AI サービス画面</h1>
       <div class="sub">診断支援候補の表示 — 確定診断ではありません</div>
     </div>
-    <a href="/">← トップに戻る</a>
+    <div class="hdr-actions">
+      <button type="button" class="btn-guide" id="openGuide" aria-haspopup="dialog">利用手順</button>
+      <a href="/">← トップに戻る</a>
+    </div>
   </header>
+
+  <div id="guideModal" class="guide-modal" role="dialog" aria-labelledby="guideTitle" aria-modal="false">
+    <div class="guide-head" id="guideDragHandle" title="ドラッグで移動">
+      <div class="guide-head-left">
+        <span class="guide-burger" aria-hidden="true"></span>
+        <div>
+          <h2 class="guide-title" id="guideTitle">利用手順</h2>
+          <p class="guide-sub">ARCHITECTURE &amp; OPS</p>
+        </div>
+      </div>
+      <span class="guide-drag-hint">ドラッグで移動</span>
+      <div class="guide-head-right">
+        <button type="button" class="guide-icon-btn" id="guideCollapse" title="折りたたむ" aria-label="折りたたむ">▼</button>
+        <button type="button" class="guide-icon-btn" id="guideClose" title="閉じる" aria-label="閉じる">✕</button>
+      </div>
+    </div>
+    <div class="guide-body" id="guideBody">
+      <article class="guide-card">
+        <p class="guide-kicker">PORTFOLIO-READY DEMO</p>
+        <h3>Medical Imaging AI → 候補検出</h3>
+        <p>
+          サンプル画像または DICOM / 一般画像をアップロードし、ローカルCV（または接続済みクラウド）で
+          病変候補枠・分類・所見文を生成します。医師確認前提の診断支援デモです。
+        </p>
+        <div class="guide-pills">
+          <span class="guide-pill">FastAPI · Python</span>
+          <span class="guide-pill">Local CV</span>
+          <span class="guide-pill">DICOM</span>
+          <span class="guide-pill">OpenCV</span>
+          <span class="guide-pill">Cache</span>
+          <span class="guide-pill">マルチプロバイダー</span>
+        </div>
+      </article>
+
+      <article class="guide-card">
+        <div class="guide-row">
+          <span class="guide-badge">ARCHITECTURE</span>
+          <span class="guide-row-title">エンドツーエンド・パイプライン</span>
+        </div>
+        <p>
+          画像受付 → DICOM/プレビュー前処理 → プロバイダー推論（既定: ローカルCV）→
+          結果キャッシュ → バウンディングボックス / 所見表示。
+          性能は <code>GET /metrics/performance</code> で確認できます。
+        </p>
+      </article>
+
+      <article class="guide-card">
+        <div class="guide-row">
+          <span class="guide-badge">RECOMMENDED</span>
+          <span class="guide-row-title">最短・安全な進め方</span>
+        </div>
+        <p>サービス画面での推奨フローです。</p>
+        <ul>
+          <li>ギャラリーからサンプルを選ぶ（またはファイルを選択）</li>
+          <li>モダリティを確認（空欄なら自動判定）</li>
+          <li>画像認識サービスはまず <code>自社AIモデル</code>（ローカルCV）</li>
+          <li><strong>解析を実行</strong> → 枠・所見を確認</li>
+          <li>同一画像の再実行はキャッシュで高速化されます</li>
+        </ul>
+        <div class="guide-warn-inline">
+          AI出力は確定診断ではありません。誤検出・見逃しを前提に、必ず原画像を医師が確認してください。
+        </div>
+      </article>
+
+      <article class="guide-card">
+        <div class="guide-row">
+          <span class="guide-badge">OPS</span>
+          <span class="guide-row-title">起動・計測・API</span>
+        </div>
+        <ul>
+          <li>起動: <code>uvicorn app.main:app --port 8090</code></li>
+          <li>画面: <code>/service</code> · API: <code>POST /analyze</code></li>
+          <li>性能ベンチ: <code>python -m app.benchmark_performance</code></li>
+          <li>クラウド未接続時もローカルCVにフォールバック</li>
+        </ul>
+      </article>
+    </div>
+  </div>
 
   <div class="wrap">
     <div class="warn">
@@ -416,6 +597,62 @@ def service_page_html() -> str:
     }});
 
     loadSamples();
+
+    /* 利用手順モーダル: 開閉・折りたたみ・ドラッグ */
+    (function () {{
+      const modal = document.getElementById('guideModal');
+      const handle = document.getElementById('guideDragHandle');
+      const collapseBtn = document.getElementById('guideCollapse');
+      const closeBtn = document.getElementById('guideClose');
+      const openBtn = document.getElementById('openGuide');
+      if (!modal || !handle) return;
+
+      let dragging = false;
+      let ox = 0, oy = 0;
+
+      function placeDefault() {{
+        modal.style.left = '';
+        modal.style.top = '';
+        modal.style.right = '24px';
+        modal.style.bottom = '';
+      }}
+
+      openBtn.addEventListener('click', () => {{
+        modal.classList.remove('hidden', 'collapsed');
+        collapseBtn.textContent = '▼';
+        placeDefault();
+      }});
+      closeBtn.addEventListener('click', (e) => {{
+        e.stopPropagation();
+        modal.classList.add('hidden');
+      }});
+      collapseBtn.addEventListener('click', (e) => {{
+        e.stopPropagation();
+        modal.classList.toggle('collapsed');
+        collapseBtn.textContent = modal.classList.contains('collapsed') ? '▲' : '▼';
+      }});
+
+      handle.addEventListener('pointerdown', (e) => {{
+        if (e.target.closest('button')) return;
+        dragging = true;
+        const rect = modal.getBoundingClientRect();
+        ox = e.clientX - rect.left;
+        oy = e.clientY - rect.top;
+        modal.style.right = 'auto';
+        modal.style.left = rect.left + 'px';
+        modal.style.top = rect.top + 'px';
+        handle.setPointerCapture(e.pointerId);
+      }});
+      handle.addEventListener('pointermove', (e) => {{
+        if (!dragging) return;
+        const x = Math.min(window.innerWidth - 80, Math.max(8, e.clientX - ox));
+        const y = Math.min(window.innerHeight - 48, Math.max(8, e.clientY - oy));
+        modal.style.left = x + 'px';
+        modal.style.top = y + 'px';
+      }});
+      handle.addEventListener('pointerup', () => {{ dragging = false; }});
+      handle.addEventListener('pointercancel', () => {{ dragging = false; }});
+    }})();
   </script>
 </body>
 </html>"""
