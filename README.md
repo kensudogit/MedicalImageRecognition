@@ -28,9 +28,16 @@ uvicorn app.main:app --reload --port 8090
 ```
 
 - トップ: http://127.0.0.1:8090/
-- **サービス画面**: http://127.0.0.1:8090/service
+- **サービス画面**: http://127.0.0.1:8090/service （サンプル画像ギャラリー付き）
+- サンプル一覧 API: http://127.0.0.1:8090/api/samples
 - Health: http://127.0.0.1:8090/health
 - Docs: http://127.0.0.1:8090/docs
+
+サンプル再生成:
+
+```powershell
+.\.venv\Scripts\python -m app.generate_samples
+```
 
 ## medicalcare との連携
 

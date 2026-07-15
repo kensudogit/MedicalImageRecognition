@@ -1,0 +1,22 @@
+services:
+  ai-imaging:
+    build:
+      context: ./ai-imaging-service
+      dockerfile: Dockerfile
+    container_name: medical-image-recognition-ai
+    environment:
+      AI_DEFAULT_PROVIDER: inhouse
+      AI_ENABLE_MOCK_INFERENCE: "true"
+      AI_UPLOAD_DIR: /app/uploads/ai-imaging
+      AI_PREVIEW_DIR: /app/uploads/ai-imaging/previews
+    ports:
+      - "8090:8090"
+    volumes:
+      - ./ai-imaging-service/uploads/ai-imaging:/app/uploads/ai-imaging
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8090/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 40s
