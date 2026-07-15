@@ -10,6 +10,7 @@ import httpx
 from app.config import settings
 from app.models.schemas import AiProvider, AnalyzeRequest, DetectionResult, Modality
 from app.providers.base import BaseImagingProvider
+from app.providers.fallback import practical_fallback
 from app.providers.mock_results import build_mock_result
 
 
@@ -19,7 +20,7 @@ class AzureAiProvider(BaseImagingProvider):
     async def is_available(self) -> bool:
         if settings.azure_ai_endpoint and settings.azure_ai_key:
             return True
-        return settings.enable_mock_inference
+        return settings.use_local_cv or settings.enable_mock_inference
 
     async def analyze(
         self,
@@ -30,10 +31,10 @@ class AzureAiProvider(BaseImagingProvider):
     ) -> DetectionResult:
         start = time.perf_counter()
 
-        if not settings.azure_ai_endpoint or settings.enable_mock_inference:
-            result = build_mock_result(modality, AiProvider.AZURE, "azure-mock")
-            result.processing_ms = int((time.perf_counter() - start) * 1000)
-            return result
+        if not settings.azure_ai_endpoint or settings.force_local_cv:
+            return await practical_fallback(
+                image_path, modality, AiProvider.AZURE, preview_path, "azure-mock"
+            )
 
         encoded = base64.b64encode(image_path.read_bytes()).decode("utf-8")
         headers = {

@@ -16,6 +16,7 @@ from app.models.schemas import (
     Modality,
 )
 from app.providers.base import BaseImagingProvider
+from app.providers.fallback import practical_fallback
 from app.providers.mock_results import build_mock_result
 
 
@@ -25,7 +26,7 @@ class ExternalMedicalAiProvider(BaseImagingProvider):
     async def is_available(self) -> bool:
         if settings.external_medical_ai_url:
             return True
-        return settings.enable_mock_inference
+        return settings.use_local_cv or settings.enable_mock_inference
 
     async def analyze(
         self,
@@ -36,10 +37,14 @@ class ExternalMedicalAiProvider(BaseImagingProvider):
     ) -> DetectionResult:
         start = time.perf_counter()
 
-        if not settings.external_medical_ai_url or settings.enable_mock_inference:
-            result = build_mock_result(modality, AiProvider.EXTERNAL, "external-mock")
-            result.processing_ms = int((time.perf_counter() - start) * 1000)
-            return result
+        if not settings.external_medical_ai_url or settings.force_local_cv:
+            return await practical_fallback(
+                image_path,
+                modality,
+                AiProvider.EXTERNAL,
+                preview_path,
+                "external-mock",
+            )
 
         headers = {"Accept": "application/json"}
         if settings.external_medical_ai_key:

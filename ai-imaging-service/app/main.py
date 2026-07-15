@@ -136,7 +136,24 @@ async def list_providers():
             for p in AiProvider
         ],
         "modalities": [m.value for m in Modality],
+        "engine": {
+            "use_local_cv": settings.use_local_cv,
+            "cache_enabled": settings.cache_enabled,
+            "version": settings.app_version,
+        },
     }
+
+
+@app.get("/metrics/performance")
+async def performance_metrics():
+    """実用性能メトリクス（レイテンシ・キャッシュ）"""
+    from app.services.local_cv_engine import HAS_CV2, CONFIG
+
+    stats = provider_router.performance_stats()
+    stats["opencv"] = HAS_CV2
+    stats["analysis_size"] = CONFIG.analysis_size
+    stats["app_version"] = settings.app_version
+    return stats
 
 
 @app.post("/dicom/metadata", response_model=DicomMetadata)
@@ -219,13 +236,18 @@ async def analyze_image(
 
         if is_dicom_file(path):
             try:
-                dicom_to_preview_png(path, preview_path)
+                dicom_to_preview_png(
+                    path, preview_path, max_size=settings.preview_max_size
+                )
             except Exception:
-                image_to_preview(path, preview_path) if path.suffix.lower() in {
+                if path.suffix.lower() in {
                     ".jpg", ".jpeg", ".png", ".bmp", ".tif", ".tiff", ".webp"
-                } else None
+                }:
+                    image_to_preview(
+                        path, preview_path, max_size=settings.preview_max_size
+                    )
         else:
-            image_to_preview(path, preview_path)
+            image_to_preview(path, preview_path, max_size=settings.preview_max_size)
 
         request = AnalyzeRequest(
             modality=resolved_modality,
@@ -234,12 +256,16 @@ async def analyze_image(
             patient_context=patient_context,
         )
         result = await provider_router.analyze(
-            path, resolved_modality, request, preview_path
+            path,
+            resolved_modality,
+            request,
+            preview_path if preview_path.exists() else None,
         )
         # プレビューIDを raw に付与（呼び出し元で利用）
         raw = dict(result.raw or {})
         raw["preview_id"] = preview_id if preview_path.exists() else None
         raw["preview_url"] = f"/previews/{preview_id}" if preview_path.exists() else None
+        raw["practical_engine"] = True
         result.raw = raw
         return result
     except ValueError as exc:

@@ -392,7 +392,7 @@ def service_page_html() -> str:
 
         findingsEl.textContent = data.findings_text || '（所見なし）';
         providerTag.textContent = data.provider || provider;
-        metaEl.textContent = `${{data.modality || ''}} · ${{data.model_version || ''}} · ${{data.processing_ms || 0}} ms`;
+        metaEl.textContent = `${{data.modality || ''}} · ${{data.model_version || ''}} · ${{data.processing_ms || 0}} ms${{(data.raw && data.raw.cache_hit) ? ' · cache' : ''}}`;
 
         boxesEl.innerHTML = '';
         (data.classifications || []).forEach(c => {{

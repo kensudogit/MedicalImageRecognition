@@ -7,6 +7,7 @@ from typing import Optional
 from app.config import settings
 from app.models.schemas import AiProvider, AnalyzeRequest, DetectionResult, Modality
 from app.providers.base import BaseImagingProvider
+from app.providers.fallback import practical_fallback
 from app.providers.mock_results import build_mock_result
 
 
@@ -16,7 +17,7 @@ class GoogleCloudProvider(BaseImagingProvider):
     async def is_available(self) -> bool:
         if settings.gcp_project_id and settings.gcp_endpoint_id:
             return True
-        return settings.enable_mock_inference
+        return settings.use_local_cv or settings.enable_mock_inference
 
     async def analyze(
         self,
@@ -27,10 +28,10 @@ class GoogleCloudProvider(BaseImagingProvider):
     ) -> DetectionResult:
         start = time.perf_counter()
 
-        if not settings.gcp_endpoint_id or settings.enable_mock_inference:
-            result = build_mock_result(modality, AiProvider.GOOGLE, "gcp-mock")
-            result.processing_ms = int((time.perf_counter() - start) * 1000)
-            return result
+        if not settings.gcp_endpoint_id or settings.force_local_cv:
+            return await practical_fallback(
+                image_path, modality, AiProvider.GOOGLE, preview_path, "gcp-mock"
+            )
 
         # Vertex AI endpoint 呼び出し（実エンドポイント接続時）
         try:

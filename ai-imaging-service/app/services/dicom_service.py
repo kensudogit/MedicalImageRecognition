@@ -1,7 +1,7 @@
-"""DICOMメタデータ抽出・プレビュー生成"""
+"""DICOMメタデータ抽出・プレビュー生成（実用前処理強化）"""
 
 from pathlib import Path
-from typing import Optional, Tuple
+from typing import Optional
 
 import numpy as np
 from PIL import Image
@@ -17,6 +17,7 @@ def is_dicom_file(path: Path) -> bool:
         return True
     try:
         import pydicom
+
         pydicom.dcmread(str(path), stop_before_pixels=True)
         return True
     except Exception:
@@ -67,31 +68,56 @@ def modality_from_dicom(meta: DicomMetadata) -> Modality:
     return mapping.get(m, Modality.DICOM)
 
 
-def dicom_to_preview_png(path: Path, output_path: Path) -> Path:
-    """DICOMピクセルデータをPNGプレビューに変換"""
+def dicom_to_preview_png(path: Path, output_path: Path, max_size: int = 1024) -> Path:
+    """DICOMピクセル → 実用的なPNGプレビュー"""
     import pydicom
 
     ds = pydicom.dcmread(str(path))
     pixels = ds.pixel_array.astype(np.float64)
 
-    if pixels.ndim == 3:
-        # RGB or multi-frame: use first frame / as-is
-        if pixels.shape[0] < 5:
-            frame = pixels[0]
-        else:
-            frame = pixels
-    else:
-        frame = pixels
+    # RescaleSlope / Intercept
+    slope = float(getattr(ds, "RescaleSlope", 1) or 1)
+    intercept = float(getattr(ds, "RescaleIntercept", 0) or 0)
+    pixels = pixels * slope + intercept
+
+    frame = _select_frame(pixels)
 
     if frame.ndim == 2:
         frame = _window_normalize(frame, ds)
-        image = Image.fromarray(frame, mode="L")
+        # MONOCHROME1 は反転
+        photo = str(getattr(ds, "PhotometricInterpretation", "") or "").upper()
+        if photo == "MONOCHROME1":
+            frame = 255 - frame
+        image = Image.fromarray(frame, mode="L").convert("RGB")
     else:
-        image = Image.fromarray(frame.astype(np.uint8))
+        if frame.dtype != np.uint8:
+            frame = _minmax_u8(frame)
+        if frame.shape[-1] == 3:
+            image = Image.fromarray(frame.astype(np.uint8), mode="RGB")
+        else:
+            image = Image.fromarray(frame.astype(np.uint8))
 
+    image.thumbnail((max_size, max_size))
     output_path.parent.mkdir(parents=True, exist_ok=True)
-    image.save(str(output_path), format="PNG")
+    image.save(str(output_path), format="PNG", optimize=True)
     return output_path
+
+
+def _select_frame(pixels: np.ndarray) -> np.ndarray:
+    if pixels.ndim == 2:
+        return pixels
+    if pixels.ndim == 3:
+        # (frames, H, W) or (H, W, C)
+        if pixels.shape[-1] in (3, 4) and pixels.shape[0] > 4:
+            return pixels
+        if pixels.shape[0] <= 4 and pixels.shape[-1] not in (3, 4):
+            # few frames stacked on axis0 as channels-like — take first
+            return pixels[0]
+        # multi-frame: middle slice often more informative
+        return pixels[len(pixels) // 2]
+    if pixels.ndim == 4:
+        return pixels[0, 0]
+    return pixels.reshape(pixels.shape[-2], pixels.shape[-1])
 
 
 def _window_normalize(frame: np.ndarray, ds) -> np.ndarray:
@@ -101,16 +127,24 @@ def _window_normalize(frame: np.ndarray, ds) -> np.ndarray:
         try:
             c = float(center[0] if isinstance(center, (list, tuple)) else center)
             w = float(width[0] if isinstance(width, (list, tuple)) else width)
-            low = c - w / 2
-            high = c + w / 2
+            if hasattr(center, "__iter__") and not isinstance(center, (str, bytes)):
+                # multi-value: prefer first clinical window
+                c = float(list(center)[0])
+            if hasattr(width, "__iter__") and not isinstance(width, (str, bytes)):
+                w = float(list(width)[0])
+            low = c - w / 2.0
+            high = c + w / 2.0
             frame = np.clip(frame, low, high)
         except Exception:
             pass
-    mn, mx = float(frame.min()), float(frame.max())
+    return _minmax_u8(frame)
+
+
+def _minmax_u8(frame: np.ndarray) -> np.ndarray:
+    mn, mx = float(np.min(frame)), float(np.max(frame))
     if mx <= mn:
-        return np.zeros_like(frame, dtype=np.uint8)
-    normalized = ((frame - mn) / (mx - mn) * 255.0).astype(np.uint8)
-    return normalized
+        return np.zeros(frame.shape, dtype=np.uint8)
+    return ((frame - mn) / (mx - mn) * 255.0).astype(np.uint8)
 
 
 def image_to_preview(path: Path, output_path: Path, max_size: int = 1024) -> Path:
@@ -119,7 +153,7 @@ def image_to_preview(path: Path, output_path: Path, max_size: int = 1024) -> Pat
     with Image.open(path) as img:
         img = img.convert("RGB")
         img.thumbnail((max_size, max_size))
-        img.save(str(output_path), format="PNG")
+        img.save(str(output_path), format="PNG", optimize=True)
     return output_path
 
 

@@ -31,6 +31,7 @@ uvicorn app.main:app --reload --port 8090
 - **サービス画面**: http://127.0.0.1:8090/service （サンプル画像ギャラリー付き）
 - サンプル一覧 API: http://127.0.0.1:8090/api/samples
 - Health: http://127.0.0.1:8090/health
+- 性能: http://127.0.0.1:8090/metrics/performance
 - Docs: http://127.0.0.1:8090/docs
 
 サンプル再生成:
@@ -38,6 +39,23 @@ uvicorn app.main:app --reload --port 8090
 ```powershell
 .\.venv\Scripts\python -m app.generate_samples
 ```
+
+実用性能ベンチマーク:
+
+```powershell
+.\.venv\Scripts\python -m app.benchmark_performance
+```
+
+詳細は [PERFORMANCE.md](./PERFORMANCE.md) を参照。
+
+## 実用エンジン（v1.1）
+
+- **ローカルCV**（デフォルト）: 画素コントラストから病変候補枠を生成（固定モックではない）
+- **結果キャッシュ**: 同一画像の再解析を高速化
+- **同時実行制御**: `AI_MAX_CONCURRENT_ANALYSES`
+- クラウド未接続時もローカルCVにフォールバック
+
+本結果は診断支援候補であり、確定診断ではありません。
 
 ## medicalcare との連携
 
@@ -51,18 +69,7 @@ context: ../MedicalImageRecognition/ai-imaging-service
 
 ## Railway デプロイ
 
-ルートに `Dockerfile` と `railway.json` があります。
-
-```text
-MedicalImageRecognition/
-  Dockerfile          ← Railway が参照
-  railway.json
-  ai-imaging-service/
-    app/
-    requirements.txt
-```
-
-再デプロイは git push 後に自動、または Railway ダッシュボードから Redeploy。
+ルートに `Dockerfile` と `railway.json` があります。再デプロイは git push 後に自動、または Railway ダッシュボードから Redeploy。
 
 ## 単体 Docker 起動
 
@@ -70,4 +77,3 @@ MedicalImageRecognition/
 cd C:\devlop\MedicalImageRecognition
 docker compose up -d --build
 ```
-"# MedicalImageRecognition" 

@@ -6,18 +6,21 @@ from typing import Literal
 
 class Settings(BaseSettings):
     app_name: str = "Medical Imaging AI Service"
-    app_version: str = "1.0.0"
+    app_version: str = "1.1.0"
     host: str = "0.0.0.0"
     port: int = 8090
 
-    # デフォルト推論プロバイダー
     default_provider: Literal[
         "inhouse", "sagemaker", "azure", "google", "external"
     ] = "inhouse"
 
-    # 自社モデル
-    inhouse_model_url: str = "http://localhost:9000/predict"
+    # 自社モデル（リモート）
+    inhouse_model_url: str = ""
     inhouse_api_key: str = ""
+
+    # ローカルCVエンジン（デフォルトON = 実用性能）
+    use_local_cv: bool = True
+    force_local_cv: bool = False
 
     # AWS SageMaker
     aws_region: str = "ap-northeast-1"
@@ -43,8 +46,15 @@ class Settings(BaseSettings):
     upload_dir: str = "./uploads/ai-imaging"
     preview_dir: str = "./uploads/ai-imaging/previews"
 
-    # モック推論（実API未設定時）
-    enable_mock_inference: bool = True
+    # 後方互換: True でもローカルCVを使う（固定モックは使わない）
+    enable_mock_inference: bool = False
+
+    # 性能
+    cache_enabled: bool = True
+    cache_ttl_seconds: int = 3600
+    cache_max_entries: int = 128
+    max_concurrent_analyses: int = 4
+    preview_max_size: int = 1024
 
     class Config:
         env_file = ".env"
