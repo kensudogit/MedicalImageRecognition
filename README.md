@@ -60,13 +60,16 @@ uvicorn app.main:app --reload --port 8090
 
 ### OpenAI の使い方
 
-```powershell
-# .env に追記
-AI_OPENAI_API_KEY=sk-...
-AI_OPENAI_MODEL=gpt-4o
+Railway では Variables に **`OPENAI_API_KEY`** を設定してください（標準名）。  
+`AI_OPENAI_API_KEY` でも可です。
+
+```text
+OPENAI_API_KEY=sk-...
+OPENAI_MODEL=gpt-4o          # 任意
 ```
 
-サービス画面で「OpenAI Vision」を選択するか、`POST /analyze` で `provider=openai` を指定します。
+サービス画面で「OpenAI Vision」を選択するか、`POST /analyze` で `provider=openai` を指定します。  
+キー未設定時はローカルCVへフォールバックします。
 
 ## medicalcare との連携
 

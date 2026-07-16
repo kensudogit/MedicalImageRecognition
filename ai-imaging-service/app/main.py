@@ -140,6 +140,8 @@ async def list_providers():
             "use_local_cv": settings.use_local_cv,
             "cache_enabled": settings.cache_enabled,
             "version": settings.app_version,
+            "openai_configured": settings.openai_configured,
+            "openai_model": settings.openai_model if settings.openai_configured else None,
         },
     }
 
