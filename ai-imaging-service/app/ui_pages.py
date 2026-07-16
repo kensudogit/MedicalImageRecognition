@@ -394,9 +394,15 @@ def service_page_html() -> str:
       <label for="context">臨床情報（任意）</label>
       <textarea id="context" placeholder="例: 発熱・咳嗽あり"></textarea>
 
+      <label style="display:flex;align-items:center;gap:.5rem;font-weight:500;margin-top:.85rem;">
+        <input id="bypassCache" type="checkbox" checked style="width:auto;" />
+        キャッシュを使わず再解析（OpenAI ライブ確認用）
+      </label>
+
       <button id="run" type="button">解析を実行</button>
+      <button id="clearCache" type="button" class="secondary" style="background:#475569;margin-top:.5rem;">サーバーキャッシュをクリア</button>
       <div id="status" class="status"></div>
-      <p class="muted" style="margin-top:.85rem;">API: <code>POST /analyze</code> · 一覧: <code>GET /api/samples</code></p>
+      <p class="muted" style="margin-top:.85rem;">API: <code>POST /analyze</code> · キャッシュ: <code>POST /cache/clear</code></p>
     </aside>
 
     <section class="panel">
@@ -412,6 +418,7 @@ def service_page_html() -> str:
       <div id="resultBlock" style="display:none;margin-top:1rem;">
         <span class="tag">NOT A DIAGNOSIS</span>
         <span id="providerTag" class="tag"></span>
+        <span id="liveTag" class="tag" style="display:none;background:#0f766e;"></span>
         <div id="findings" class="findings"></div>
         <ul id="boxes" class="boxes"></ul>
       </div>
@@ -431,9 +438,12 @@ def service_page_html() -> str:
     const boxesEl = document.getElementById('boxes');
     const metaEl = document.getElementById('meta');
     const providerTag = document.getElementById('providerTag');
+    const liveTag = document.getElementById('liveTag');
     const samplesEl = document.getElementById('samples');
     const selectedLabel = document.getElementById('selectedLabel');
     const modalityEl = document.getElementById('modality');
+    const bypassCacheEl = document.getElementById('bypassCache');
+    const clearCacheBtn = document.getElementById('clearCache');
 
     let currentBoxes = [];
     let selectedSample = null; // {{ url, filename, modality, title }}
@@ -550,6 +560,7 @@ def service_page_html() -> str:
       if (modality) form.append('modality', modality);
       if (provider) form.append('provider', provider);
       form.append('generate_findings', 'true');
+      form.append('bypass_cache', bypassCacheEl.checked ? 'true' : 'false');
       if (context) form.append('patient_context', context);
 
       try {{
@@ -574,8 +585,42 @@ def service_page_html() -> str:
 
         findingsEl.textContent = data.findings_text || '（所見なし）';
         providerTag.textContent = data.provider || provider;
-        metaEl.textContent = `${{data.modality || ''}} · ${{data.model_version || ''}} · ${{data.processing_ms || 0}} ms${{(data.raw && data.raw.cache_hit) ? ' · cache' : ''}}`;
+        const raw = data.raw || {{}};
+        const cacheHit = !!raw.cache_hit;
+        const openaiLive = !!raw.openai_live;
+        const engine = raw.engine || '';
+        const usage = raw.usage || {{}};
+        const tokens = usage.total_tokens || usage.prompt_tokens || null;
+        let meta = `${{data.modality || ''}} · ${{data.model_version || ''}} · ${{data.processing_ms || 0}} ms`;
+        if (cacheHit) meta += ' · cache';
+        else if (openaiLive) meta += ' · LIVE OpenAI';
+        else if (engine) meta += ' · ' + engine;
+        if (tokens) meta += ' · tokens=' + tokens;
+        metaEl.textContent = meta;
 
+        if (openaiLive) {{
+          liveTag.style.display = 'inline-block';
+          liveTag.textContent = 'LIVE API';
+          liveTag.style.background = '#0f766e';
+        }} else if (cacheHit) {{
+          liveTag.style.display = 'inline-block';
+          liveTag.textContent = 'FROM CACHE';
+          liveTag.style.background = '#64748b';
+        }} else if (engine === 'local_cv') {{
+          liveTag.style.display = 'inline-block';
+          liveTag.textContent = 'LOCAL CV';
+          liveTag.style.background = '#b45309';
+        }} else {{
+          liveTag.style.display = 'none';
+        }}
+
+        if (openaiLive) {{
+          setStatus('OpenAI API へライブ呼び出し完了（診断支援候補・確定診断ではありません）', true);
+        }} else if (cacheHit) {{
+          setStatus('キャッシュ結果を表示中（今回は OpenAI API 未呼び出し）。「キャッシュを使わず再解析」にチェックして再実行してください。', true);
+        }} else {{
+          setStatus('解析完了（診断支援候補・確定診断ではありません）', true);
+        }}
         boxesEl.innerHTML = '';
         (data.classifications || []).forEach(c => {{
           const li = document.createElement('li');
@@ -588,12 +633,26 @@ def service_page_html() -> str:
           boxesEl.appendChild(li);
         }});
 
-        setStatus('解析完了（診断支援候補・確定診断ではありません）', true);
         setTimeout(drawBoxes, 50);
       }} catch (e) {{
         setStatus('解析失敗: ' + (e.message || e), false);
       }} finally {{
         runBtn.disabled = false;
+      }}
+    }});
+
+    clearCacheBtn.addEventListener('click', async () => {{
+      clearCacheBtn.disabled = true;
+      try {{
+        const res = await fetch('/cache/clear', {{ method: 'POST' }});
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.detail || JSON.stringify(data));
+        const entries = (data.cache && data.cache.entries) || 0;
+        setStatus('サーバー解析キャッシュをクリアしました（entries=' + entries + '）。続けて「キャッシュを使わず再解析」で実行してください。', true);
+      }} catch (e) {{
+        setStatus('キャッシュクリア失敗: ' + (e.message || e), false);
+      }} finally {{
+        clearCacheBtn.disabled = false;
       }}
     }});
 

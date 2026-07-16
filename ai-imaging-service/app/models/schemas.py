@@ -58,6 +58,7 @@ class AnalyzeRequest(BaseModel):
     provider: Optional[AiProvider] = None
     generate_findings: bool = True
     patient_context: Optional[str] = None
+    bypass_cache: bool = False
 
 
 class DicomMetadata(BaseModel):

@@ -54,7 +54,9 @@ class ProviderRouter:
     ) -> DetectionResult:
         provider_key = (request.provider or AiProvider(settings.default_provider)).value
         cache_key = None
-        if settings.cache_enabled:
+        use_cache = settings.cache_enabled and not request.bypass_cache
+
+        if use_cache or settings.cache_enabled:
             model_tag = (
                 f"openai:{settings.openai_model}"
                 if provider_key == AiProvider.OPENAI.value
@@ -67,10 +69,13 @@ class ProviderRouter:
                 model_version=model_tag,
                 generate_findings=request.generate_findings,
             )
+
+        if use_cache and cache_key:
             cached = analysis_cache.get(cache_key)
             if cached is not None:
                 raw = dict(cached.raw or {})
                 raw["cache_hit"] = True
+                raw["openai_live"] = False
                 cached.raw = raw
                 cached.processing_ms = 0
                 return cached
@@ -91,13 +96,22 @@ class ProviderRouter:
         self.total_analyses += 1
         self.total_processing_ms += int(result.processing_ms or 0)
 
-        if settings.cache_enabled and cache_key:
-            raw = dict(result.raw or {})
-            raw["cache_hit"] = False
-            result.raw = raw
+        raw = dict(result.raw or {})
+        raw["cache_hit"] = False
+        engine = str(raw.get("engine") or "")
+        raw["openai_live"] = (
+            provider_key == AiProvider.OPENAI.value and engine == "openai_vision"
+        )
+        result.raw = raw
+
+        if settings.cache_enabled and cache_key and not request.bypass_cache:
             analysis_cache.set(cache_key, result)
 
         return result
+
+    def clear_cache(self) -> dict:
+        analysis_cache.clear()
+        return analysis_cache.stats()
 
     def performance_stats(self) -> dict:
         avg = (

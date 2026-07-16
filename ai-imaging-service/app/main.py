@@ -155,7 +155,19 @@ async def performance_metrics():
     stats["opencv"] = HAS_CV2
     stats["analysis_size"] = CONFIG.analysis_size
     stats["app_version"] = settings.app_version
+    stats["openai_configured"] = settings.openai_configured
     return stats
+
+
+@app.post("/cache/clear")
+async def clear_analysis_cache():
+    """サーバー側の解析結果キャッシュをクリア（ブラウザキャッシュとは別）"""
+    stats = provider_router.clear_cache()
+    return {
+        "message": "解析キャッシュをクリアしました",
+        "cache": stats,
+        "openai_configured": settings.openai_configured,
+    }
 
 
 @app.post("/dicom/metadata", response_model=DicomMetadata)
@@ -227,6 +239,7 @@ async def analyze_image(
     provider: Optional[str] = Form(None),
     generate_findings: bool = Form(True),
     patient_context: Optional[str] = Form(None),
+    bypass_cache: bool = Form(False),
 ):
     path = await _save_upload(file)
     preview_id = f"{uuid.uuid4().hex}.png"
@@ -256,6 +269,7 @@ async def analyze_image(
             provider=resolved_provider,
             generate_findings=generate_findings,
             patient_context=patient_context,
+            bypass_cache=bypass_cache,
         )
         result = await provider_router.analyze(
             path,
