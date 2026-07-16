@@ -11,6 +11,7 @@ from app.providers.base import BaseImagingProvider
 from app.providers.external_medical import ExternalMedicalAiProvider
 from app.providers.google_cloud import GoogleCloudProvider
 from app.providers.inhouse import InHouseProvider
+from app.providers.openai_provider import OpenAiProvider
 from app.providers.sagemaker import SageMakerProvider
 from app.services.cache import analysis_cache
 
@@ -19,6 +20,7 @@ class ProviderRouter:
     def __init__(self) -> None:
         self._providers: dict[AiProvider, BaseImagingProvider] = {
             AiProvider.INHOUSE: InHouseProvider(),
+            AiProvider.OPENAI: OpenAiProvider(),
             AiProvider.SAGEMAKER: SageMakerProvider(),
             AiProvider.AZURE: AzureAiProvider(),
             AiProvider.GOOGLE: GoogleCloudProvider(),
@@ -53,11 +55,16 @@ class ProviderRouter:
         provider_key = (request.provider or AiProvider(settings.default_provider)).value
         cache_key = None
         if settings.cache_enabled:
+            model_tag = (
+                f"openai:{settings.openai_model}"
+                if provider_key == AiProvider.OPENAI.value
+                else "local-cv-1.1"
+            )
             cache_key = analysis_cache.content_key(
                 image_path,
                 modality.value,
                 provider_key,
-                model_version="local-cv-1.1",
+                model_version=model_tag,
                 generate_findings=request.generate_findings,
             )
             cached = analysis_cache.get(cache_key)

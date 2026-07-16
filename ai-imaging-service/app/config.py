@@ -6,17 +6,25 @@ from typing import Literal
 
 class Settings(BaseSettings):
     app_name: str = "Medical Imaging AI Service"
-    app_version: str = "1.1.0"
+    app_version: str = "1.2.0"
     host: str = "0.0.0.0"
     port: int = 8090
 
     default_provider: Literal[
-        "inhouse", "sagemaker", "azure", "google", "external"
+        "inhouse", "openai", "sagemaker", "azure", "google", "external"
     ] = "inhouse"
 
     # 自社モデル（リモート）
     inhouse_model_url: str = ""
     inhouse_api_key: str = ""
+
+    # OpenAI Vision
+    openai_api_key: str = ""
+    openai_model: str = "gpt-4o"
+    openai_base_url: str = "https://api.openai.com/v1"
+    openai_organization: str = ""
+    openai_max_tokens: int = 1200
+    openai_timeout_seconds: float = 90.0
 
     # ローカルCVエンジン（デフォルトON = 実用性能）
     use_local_cv: bool = True

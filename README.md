@@ -51,11 +51,22 @@ uvicorn app.main:app --reload --port 8090
 ## 実用エンジン（v1.1）
 
 - **ローカルCV**（デフォルト）: 画素コントラストから病変候補枠を生成（固定モックではない）
+- **OpenAI Vision**: `AI_OPENAI_API_KEY` 設定時に GPT-4o 等で候補枠・所見を生成（`provider=openai`）
 - **結果キャッシュ**: 同一画像の再解析を高速化
 - **同時実行制御**: `AI_MAX_CONCURRENT_ANALYSES`
 - クラウド未接続時もローカルCVにフォールバック
 
 本結果は診断支援候補であり、確定診断ではありません。
+
+### OpenAI の使い方
+
+```powershell
+# .env に追記
+AI_OPENAI_API_KEY=sk-...
+AI_OPENAI_MODEL=gpt-4o
+```
+
+サービス画面で「OpenAI Vision」を選択するか、`POST /analyze` で `provider=openai` を指定します。
 
 ## medicalcare との連携
 

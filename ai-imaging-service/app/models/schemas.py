@@ -18,6 +18,7 @@ class Modality(str, Enum):
 
 class AiProvider(str, Enum):
     INHOUSE = "inhouse"
+    OPENAI = "openai"
     SAGEMAKER = "sagemaker"
     AZURE = "azure"
     GOOGLE = "google"

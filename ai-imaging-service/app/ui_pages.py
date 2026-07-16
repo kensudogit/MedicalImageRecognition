@@ -300,10 +300,10 @@ def service_page_html() -> str:
         <div class="guide-pills">
           <span class="guide-pill">FastAPI · Python</span>
           <span class="guide-pill">Local CV</span>
+          <span class="guide-pill">OpenAI Vision</span>
           <span class="guide-pill">DICOM</span>
           <span class="guide-pill">OpenCV</span>
           <span class="guide-pill">Cache</span>
-          <span class="guide-pill">マルチプロバイダー</span>
         </div>
       </article>
 
@@ -328,7 +328,7 @@ def service_page_html() -> str:
         <ul>
           <li>ギャラリーからサンプルを選ぶ（またはファイルを選択）</li>
           <li>モダリティを確認（空欄なら自動判定）</li>
-          <li>画像認識サービスはまず <code>自社AIモデル</code>（ローカルCV）</li>
+          <li>画像認識サービスはまず <code>自社AIモデル</code>（ローカルCV）。高精度テキスト所見は <code>OpenAI Vision</code></li>
           <li><strong>解析を実行</strong> → 枠・所見を確認</li>
           <li>同一画像の再実行はキャッシュで高速化されます</li>
         </ul>
@@ -384,6 +384,7 @@ def service_page_html() -> str:
       <label for="provider">画像認識サービス</label>
       <select id="provider">
         <option value="inhouse">自社AIモデル</option>
+        <option value="openai">OpenAI Vision</option>
         <option value="sagemaker">AWS SageMaker</option>
         <option value="azure">Azure AI</option>
         <option value="google">Google Cloud</option>

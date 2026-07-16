@@ -38,7 +38,7 @@ app = FastAPI(
     description=(
         "医療画像認識AIサービス。"
         "X線/CT/MRI/超音波/内視鏡/病理/DICOMに対応。"
-        "自社モデル・SageMaker・Azure AI・Google Cloud・外部医療AI APIを切替可能。"
+        "自社モデル・OpenAI Vision・SageMaker・Azure AI・Google Cloud・外部医療AI APIを切替可能。"
     ),
 )
 
@@ -304,6 +304,7 @@ def _resolve_modality(path: Path, filename: str, modality: Optional[str]) -> Mod
 def _provider_label(provider: AiProvider) -> str:
     labels = {
         AiProvider.INHOUSE: "自社AIモデル",
+        AiProvider.OPENAI: "OpenAI Vision",
         AiProvider.SAGEMAKER: "AWS SageMaker",
         AiProvider.AZURE: "Azure AI",
         AiProvider.GOOGLE: "Google Cloud",
