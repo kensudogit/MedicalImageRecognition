@@ -3,6 +3,78 @@
 医療画像AI認識サービス（FastAPI）。  
 `medicalcare-electronic-application` から分離したスタンドアロンパッケージです。
 
+> **Healthcare AI / Medical Imaging Service** — 医療画像を独立したAIサービスとして解析し、ローカルCVとVision AIを切り替えながら、キャッシュ・同時実行制御・性能計測・フォールバックまで扱う推論基盤です。
+>
+> **Stack:** Python · FastAPI · Computer Vision · OpenAI Vision · Docker · Railway
+
+## Portfolio Overview
+
+| Item | Description |
+|---|---|
+| **Problem** | 医療画像AIを業務アプリへ直接埋め込むと、推論負荷・AIプロバイダー障害・モデル変更・性能監視が業務処理と密結合する |
+| **Solution** | 画像解析を独立FastAPIサービスへ分離し、ローカルCVと外部Vision AIを共通APIの背後で切り替える |
+| **Architecture** | Healthcare Application → Medical Imaging API → Provider Router → Local CV / Vision AI → Cache / Metrics |
+| **Reliability** | AI未設定・クラウド未接続時のローカルフォールバック、同時実行制御、結果キャッシュ、性能ベンチマーク |
+| **Role** | Healthcare AIポートフォリオの **Medical Imaging AI Service Layer** |
+
+## Architecture
+
+```text
+Healthcare / Medical Application
+             │
+             ▼
+     Medical Imaging API
+          FastAPI
+             │
+      ┌──────┴──────┐
+      ▼             ▼
+ Provider Router   Cache
+      │
+ ┌────┴─────────┐
+ ▼              ▼
+Local CV     Vision AI
+                 │
+                 ▼
+        Findings / Candidate Regions
+                 │
+                 ▼
+          Metrics / Monitoring
+```
+
+## Engineering Differentiators
+
+- **Service isolation** — imaging inference is separated from the healthcare business application so model/runtime changes do not redefine the core application boundary.
+- **Provider abstraction** — local computer vision and external Vision AI are selected behind one service interface.
+- **Graceful fallback** — the service remains usable through local CV when cloud AI is unavailable or unconfigured.
+- **Performance controls** — caching and explicit concurrency limits protect the service from repeated analysis and uncontrolled parallel inference.
+- **Benchmarkable runtime** — performance measurement is part of the repository rather than an undocumented assumption.
+- **Integration-ready design** — Spring Boot healthcare applications consume the service through a configurable base URL.
+- **Clinical boundary** — outputs are positioned as diagnostic-support candidates, not definitive diagnoses.
+
+## Healthcare AI Portfolio Map
+
+| Repository | Primary role |
+|---|---|
+| [NextGen_AI_Healthcare_Platform](../NextGen_AI_Healthcare_Platform) | Flagship healthcare platform: EMR/PACS, HL7/FHIR, DICOM and AI integration |
+| **MedicalImageRecognition** | **Medical Imaging AI Service Layer** |
+| [MediCall_AI](../MediCall_AI) | Healthcare Voice AI and appointment/call automation |
+| [DisabilityClaim](../DisabilityClaim) | Welfare-service billing and claims workflow |
+| [medicalcare-electronic-application](../medicalcare-electronic-application) | Healthcare electronic application/workflow system and imaging integration |
+
+```text
+                NextGen Healthcare Platform
+                    /        |        \
+                   /         |         \
+        Medical Imaging   Voice AI   Workflow / Claims
+             │               │             │
+             ▼               ▼             ▼
+MedicalImageRecognition  MediCall_AI  DisabilityClaim
+             │
+             ▼
+medicalcare-electronic-application
+       integration consumer
+```
+
 ## 構成
 
 ```
